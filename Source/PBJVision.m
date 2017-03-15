@@ -1428,6 +1428,7 @@ typedef void (^PBJVisionBlock)();
     _mirroringMode = mirroringMode;
     
     AVCaptureConnection *videoConnection = [_currentOutput connectionWithMediaType:AVMediaTypeVideo];
+    AVCaptureConnection *videoFileConnection = [_captureMovieFileOutput connectionWithMediaType:AVMediaTypeVideo];
     AVCaptureConnection *previewConnection = [_previewLayer connection];
     
     switch (_mirroringMode) {
@@ -1435,6 +1436,9 @@ typedef void (^PBJVisionBlock)();
         {
             if ([videoConnection isVideoMirroringSupported]) {
                 [videoConnection setVideoMirrored:NO];
+            }
+            if ([videoFileConnection isVideoMirroringSupported]) {
+                [videoFileConnection setVideoMirrored:NO];
             }
             if ([previewConnection isVideoMirroringSupported]) {
                 [previewConnection setAutomaticallyAdjustsVideoMirroring:NO];
@@ -1446,6 +1450,9 @@ typedef void (^PBJVisionBlock)();
         {
             if ([videoConnection isVideoMirroringSupported]) {
                 [videoConnection setVideoMirrored:YES];
+            }
+            if ([videoFileConnection isVideoMirroringSupported]) {
+                [videoFileConnection setVideoMirrored:YES];
             }
             if ([previewConnection isVideoMirroringSupported]) {
                 [previewConnection setAutomaticallyAdjustsVideoMirroring:NO];
@@ -1459,6 +1466,10 @@ typedef void (^PBJVisionBlock)();
             if ([videoConnection isVideoMirroringSupported]) {
                 BOOL mirror = (_cameraDevice == PBJCameraDeviceFront);
                 [videoConnection setVideoMirrored:mirror];
+            }
+            if ([videoFileConnection isVideoMirroringSupported]) {
+                BOOL mirror = (_cameraDevice == PBJCameraDeviceFront);
+                [videoFileConnection setVideoMirrored:mirror];
             }
             if ([previewConnection isVideoMirroringSupported]) {
                 [previewConnection setAutomaticallyAdjustsVideoMirroring:YES];
