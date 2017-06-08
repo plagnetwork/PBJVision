@@ -99,8 +99,8 @@ PBJMediaWriterDelegate>
     AVCaptureDeviceInput *_captureDeviceInputAudio;
     
     AVCaptureStillImageOutput *_captureOutputPhoto;
-    AVCaptureAudioDataOutput *_captureOutputAudio;
-    AVCaptureVideoDataOutput *_captureOutputVideo;
+    //    AVCaptureAudioDataOutput *_captureOutputAudio;
+    //    AVCaptureVideoDataOutput *_captureOutputVideo;
     AVCaptureMovieFileOutput *_captureMovieFileOutput;
     
     // vision core
@@ -888,8 +888,8 @@ typedef void (^PBJVisionBlock)();
     [notificationCenter removeObserver:self name:AVCaptureDeviceSubjectAreaDidChangeNotification object:nil];
     
     _captureOutputPhoto = nil;
-    _captureOutputAudio = nil;
-    _captureOutputVideo = nil;
+    //    _captureOutputAudio = nil;
+    //    _captureOutputVideo = nil;
     _captureMovieFileOutput = nil;
     
     _captureDeviceAudio = nil;
@@ -929,8 +929,7 @@ typedef void (^PBJVisionBlock)();
     ((_currentDevice == _captureDeviceBack) && (_cameraDevice != PBJCameraDeviceBack));
     
     BOOL shouldSwitchMode = (_currentOutput == nil) ||
-    ((_currentOutput == _captureOutputPhoto) && (_cameraMode != PBJCameraModePhoto)) ||
-    ((_currentOutput == _captureOutputVideo) && (_cameraMode != PBJCameraModeVideo));
+    ((_currentOutput == _captureOutputPhoto) && (_cameraMode != PBJCameraModePhoto));
     
     DLog(@"switchDevice %d switchMode %d", shouldSwitchDevice, shouldSwitchMode);
     
@@ -987,10 +986,10 @@ typedef void (^PBJVisionBlock)();
             if (_captureDeviceInputAudio)
                 [_captureSession removeInput:_captureDeviceInputAudio];
             
-            if (_captureOutputAudio)
-                [_captureSession removeOutput:_captureOutputAudio];
+            //            if (_captureOutputAudio)
+            //                [_captureSession removeOutput:_captureOutputAudio];
             
-        } else if (!_captureDeviceAudio && !_captureDeviceInputAudio && !_captureOutputAudio &&  _flags.audioCaptureEnabled) {
+        } else if (!_captureDeviceAudio && !_captureDeviceInputAudio &&  _flags.audioCaptureEnabled) {
             
             NSError *error = nil;
             _captureDeviceAudio = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeAudio];
@@ -999,12 +998,12 @@ typedef void (^PBJVisionBlock)();
                 DLog(@"error setting up audio input (%@)", error);
             }
             
-            _captureOutputAudio = [[AVCaptureAudioDataOutput alloc] init];
-            [_captureOutputAudio setSampleBufferDelegate:self queue:_captureCaptureDispatchQueue];
+            //            _captureOutputAudio = [[AVCaptureAudioDataOutput alloc] init];
+            //            [_captureOutputAudio setSampleBufferDelegate:self queue:_captureCaptureDispatchQueue];
             
         }
         
-        [_captureSession removeOutput:_captureOutputVideo];
+        //        [_captureSession removeOutput:_captureOutputVideo];
         [_captureSession removeOutput:_captureOutputPhoto];
         [_captureSession removeOutput:_captureMovieFileOutput];
         
@@ -1015,15 +1014,15 @@ typedef void (^PBJVisionBlock)();
                 if ([_captureSession canAddInput:_captureDeviceInputAudio]) {
                     [_captureSession addInput:_captureDeviceInputAudio];
                 }
-                // audio output
-                if ([_captureSession canAddOutput:_captureOutputAudio]) {
-                    [_captureSession addOutput:_captureOutputAudio];
-                }
-                // vidja output
-                if ([_captureSession canAddOutput:_captureOutputVideo]) {
-                    [_captureSession addOutput:_captureOutputVideo];
-                    newCaptureOutput = _captureOutputVideo;
-                }
+                //                // audio output
+                //                if ([_captureSession canAddOutput:_captureOutputAudio]) {
+                //                    [_captureSession addOutput:_captureOutputAudio];
+                //                }
+                //                // vidja output
+                //                if ([_captureSession canAddOutput:_captureOutputVideo]) {
+                //                    [_captureSession addOutput:_captureOutputVideo];
+                //                    newCaptureOutput = _captureOutputVideo;
+                //                }
                 break;
             }
             case PBJCameraModePhoto:
@@ -1055,72 +1054,13 @@ typedef void (^PBJVisionBlock)();
         newCaptureOutput = _currentOutput;
     
     // setup video connection
-    AVCaptureConnection *videoConnection = [_captureOutputVideo connectionWithMediaType:AVMediaTypeVideo];
+    //    AVCaptureConnection *videoConnection = [_captureOutputVideo connectionWithMediaType:AVMediaTypeVideo];
     
     // setup input/output
     
     NSString *sessionPreset = _captureSessionPreset;
     
-    if ( newCaptureOutput && (newCaptureOutput == _captureOutputVideo) && videoConnection ) {
-        
-        // setup video orientation
-        [self _setOrientationForConnection:videoConnection];
-        
-        // setup video stabilization, if available
-        if ([videoConnection isVideoStabilizationSupported]) {
-            if ([videoConnection respondsToSelector:@selector(setPreferredVideoStabilizationMode:)]) {
-                [videoConnection setPreferredVideoStabilizationMode:AVCaptureVideoStabilizationModeAuto];
-            } else {
-                [videoConnection setEnablesVideoStabilizationWhenAvailable:YES];
-            }
-        }
-        
-        // discard late frames
-        [_captureOutputVideo setAlwaysDiscardsLateVideoFrames:YES];
-        
-        // specify video preset
-        sessionPreset = _captureSessionPreset;
-        
-        // setup video settings
-        // kCVPixelFormatType_420YpCbCr8BiPlanarFullRange Bi-Planar Component Y'CbCr 8-bit 4:2:0, full-range (luma=[0,255] chroma=[1,255])
-        // baseAddr points to a big-endian CVPlanarPixelBufferInfo_YCbCrBiPlanar struct
-        BOOL supportsFullRangeYUV = NO;
-        BOOL supportsVideoRangeYUV = NO;
-        NSArray *supportedPixelFormats = _captureOutputVideo.availableVideoCVPixelFormatTypes;
-        for (NSNumber *currentPixelFormat in supportedPixelFormats) {
-            if ([currentPixelFormat intValue] == kCVPixelFormatType_420YpCbCr8BiPlanarFullRange) {
-                supportsFullRangeYUV = YES;
-            }
-            if ([currentPixelFormat intValue] == kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange) {
-                supportsVideoRangeYUV = YES;
-            }
-        }
-        
-        NSDictionary *videoSettings = nil;
-        if (supportsFullRangeYUV) {
-            videoSettings = @{ (id)kCVPixelBufferPixelFormatTypeKey : @(kCVPixelFormatType_420YpCbCr8BiPlanarFullRange) };
-        } else if (supportsVideoRangeYUV) {
-            videoSettings = @{ (id)kCVPixelBufferPixelFormatTypeKey : @(kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange) };
-        }
-        if (videoSettings) {
-            [_captureOutputVideo setVideoSettings:videoSettings];
-        }
-        
-        // setup video device configuration
-        NSError *error = nil;
-        if ([newCaptureDevice lockForConfiguration:&error]) {
-            
-            // smooth autofocus for videos
-            if ([newCaptureDevice isSmoothAutoFocusSupported])
-                [newCaptureDevice setSmoothAutoFocusEnabled:YES];
-            
-            [newCaptureDevice unlockForConfiguration];
-            
-        } else if (error) {
-            DLog(@"error locking device for video device configuration (%@)", error);
-        }
-        
-    } else if ( newCaptureOutput && (newCaptureOutput == _captureOutputPhoto) ) {
+    if ( newCaptureOutput && (newCaptureOutput == _captureOutputPhoto) ) {
         
         // specify photo preset
         sessionPreset = AVCaptureSessionPreset1280x720;
@@ -1778,7 +1718,7 @@ typedef void (^PBJVisionBlock)();
             return;
         
         NSString *guid = [[NSUUID new] UUIDString];
-        NSString *outputFile = [NSString stringWithFormat:@"video_%@.mp4", guid];
+        NSString *outputFile = [NSString stringWithFormat:@"video_%@.mov", guid];
         
         if ([_delegate respondsToSelector:@selector(vision:willStartVideoCaptureToFile:)]) {
             outputFile = [_delegate vision:self willStartVideoCaptureToFile:outputFile];
@@ -2146,7 +2086,7 @@ typedef void (^PBJVisionBlock)();
     }
     
     // setup media writer
-    BOOL isVideo = (captureOutput == _captureOutputVideo);
+    BOOL isVideo = NO;
     if (!isVideo && !_mediaWriter.isAudioReady) {
         [self _setupMediaWriterAudioInputWithSampleBuffer:sampleBuffer];
         DLog(@"ready for audio (%d)", _mediaWriter.isAudioReady);
