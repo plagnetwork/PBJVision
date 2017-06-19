@@ -219,7 +219,7 @@ static CGFloat const PBJVideoBitRate1280x750 = 5000000 * 8;
 @property (nonatomic, getter=isVideoRenderingEnabled) BOOL videoRenderingEnabled;
 @property (nonatomic, getter=isAudioCaptureEnabled) BOOL audioCaptureEnabled;
 
-@property (nonatomic, readonly) EAGLContext *context;
+//@property (nonatomic, readonly) EAGLContext *context;
 @property (nonatomic) CGRect presentationFrame;
 
 @property (nonatomic) CMTime maximumCaptureDuration; // automatically triggers vision:capturedVideo:error: after exceeding threshold, (kCMTimeInvalid records without threshold)
